@@ -2,6 +2,12 @@ import os
 import importlib
 import pandas as pd
 
+print("test_chsnge")
+
+
+
+
+
 input_folder = "inputs"
 result_file = "results.csv"
 contenders_folder = "contenders"
