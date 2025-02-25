@@ -14,22 +14,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Check if branch name matches GitHub actor
+        run: |
+          # Extract branch name from GITHUB_REF
+          branch_name=$(echo "${GITHUB_REF#refs/heads/}")
+          echo "Branch name: $branch_name"
+          if [ "$branch_name" != "${{ github.actor }}" ]; then
+            echo "Error: Branch name '$branch_name' does not match your GitHub username '${{ github.actor }}'."
+            exit 1
+          fi
+          echo "Branch name matches GitHub actor."
+
       - name: Get changed files
         id: filecheck
         run: |
-          # For pull_request events, use the base and head commit SHAs
+          # Use the base and head commit SHAs from the pull request event
           base_sha="${{ github.event.pull_request.base.sha }}"
           head_sha="${{ github.event.pull_request.head.sha }}"
           
-          # List changed or created files
+          # List the changed or created files
           files=$(git diff --name-only "$base_sha" "$head_sha")
           echo "Changed files: $files"
           
-          # Count the number of changed files
+          # Count the number of files changed
           count=$(echo "$files" | wc -l | tr -d ' ')
           echo "File count: $count"
           
-          # Set outputs for the next step
+          # Set outputs for subsequent steps
           echo "::set-output name=count::$count"
           echo "::set-output name=files::$files"
 
@@ -44,7 +55,7 @@ jobs:
           file=$(echo "${{ steps.filecheck.outputs.files }}" | head -n 1)
           echo "Submitted file: $file"
 
-          # Expected file name: submissions/<github_username>.py
+          # Expected file path: submissions/<github_actor>.py
           expected="submissions/${{ github.actor }}.py"
           if [ "$file" != "$expected" ]; then
             echo "Error: The submission file must be located at '$expected'."
