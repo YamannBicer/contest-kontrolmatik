@@ -1,34 +1,44 @@
-name: CI
+name: Check Submission
 
 on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened]
 
 jobs:
-  # ------------------------------------------------------------------------------------------------------------------------------------------------
-  # Event `pull_request`: Compare the last commit of the main branch or last remote commit of the PR branch -> to the current commit of a PR branch.
-  # ------------------------------------------------------------------------------------------------------------------------------------------------
   changed_files:
-    runs-on: ubuntu-latest  # windows-latest || macos-latest
+    runs-on: ubuntu-latest
     name: Test changed-files
     steps:
       - uses: actions/checkout@v4
 
-      # -----------------------------------------------------------------------------------------------------------
-      # Example 1
-      # -----------------------------------------------------------------------------------------------------------
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v45
-        # To compare changes between the current commit and the last pushed remote commit set `since_last_remote_commit: true`. e.g
-        # with:
-        #   since_last_remote_commit: true
 
-      - name: List all changed files
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+      - name: Validate single file submission
         run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
-          done
+          # Get the list of changed files (space-separated).
+          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+
+          # Convert to an array so we can count easily.
+          changed_files_array=($changed_files)
+          file_count=${#changed_files_array[@]}
+
+          # Check that exactly one file changed.
+          if [ "$file_count" -ne 1 ]; then
+            echo "Error: Exactly one file must be changed or created, found $file_count."
+            exit 1
+          fi
+
+          # Check that the file name matches submissions/<username>.py
+          file="${changed_files_array[0]}"
+          expected="submissions/${{ github.actor }}.py"
+
+          if [ "$file" != "$expected" ]; then
+            echo "Error: The submission file must be located at '$expected'. Found: $file"
+            exit 1
+          fi
+
+          echo "Success: Exactly one file changed, named '$expected'."
