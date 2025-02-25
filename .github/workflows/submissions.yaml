@@ -14,16 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Check if branch name matches GitHub actor
-        run: |
-          # Extract branch name from GITHUB_REF
-          branch_name=$(echo "${GITHUB_REF#refs/heads/}")
-          echo "Branch name: $branch_name"
-          if [ "$branch_name" != "${{ github.actor }}" ]; then
-            echo "Error: Branch name '$branch_name' does not match your GitHub username '${{ github.actor }}'."
-            exit 1
-          fi
-          echo "Branch name matches GitHub actor."
 
       - name: Get changed files
         id: filecheck
