@@ -3,7 +3,7 @@ name: Check Submission
 on:
   pull_request:
     branches:
-      - submissions
+      - main
     types: [opened, synchronize, reopened]
 
 jobs:
