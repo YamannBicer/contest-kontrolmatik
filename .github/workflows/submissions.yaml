@@ -1,0 +1,54 @@
+name: Check Submission
+
+on:
+  pull_request:
+    branches:
+      - submissions
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate_submission:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get changed files
+        id: filecheck
+        run: |
+          # For pull_request events, use the base and head commit SHAs
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+          
+          # List changed or created files
+          files=$(git diff --name-only "$base_sha" "$head_sha")
+          echo "Changed files: $files"
+          
+          # Count the number of changed files
+          count=$(echo "$files" | wc -l | tr -d ' ')
+          echo "File count: $count"
+          
+          # Set outputs for the next step
+          echo "::set-output name=count::$count"
+          echo "::set-output name=files::$files"
+
+      - name: Validate single file submission and naming
+        run: |
+          file_count=${{ steps.filecheck.outputs.count }}
+          if [ "$file_count" -ne 1 ]; then
+            echo "Error: Exactly one file must be changed or created."
+            exit 1
+          fi
+
+          file=$(echo "${{ steps.filecheck.outputs.files }}" | head -n 1)
+          echo "Submitted file: $file"
+
+          # Expected file name: submissions/<github_username>.py
+          expected="submissions/${{ github.actor }}.py"
+          if [ "$file" != "$expected" ]; then
+            echo "Error: The submission file must be located at '$expected'."
+            exit 1
+          fi
+
+          echo "Success: Submission meets the naming and location requirements!"
